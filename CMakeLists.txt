@@ -20,11 +20,15 @@
 ########################################################################
 # Project setup
 ########################################################################
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.8)
 project(gr-osmosdr CXX C)
 enable_testing()
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake/Modules)
+#install to PyBOMBS target prefix if defined
+if(DEFINED ENV{PYBOMBS_PREFIX})
+    set(CMAKE_INSTALL_PREFIX $ENV{PYBOMBS_PREFIX})
+    message(STATUS "PyBOMBS installed GNU Radio. Setting CMAKE_INSTALL_PREFIX to $ENV{PYBOMBS_PREFIX}")
+endif()
 
 #select the release build type by default to get optimization flags
 if(NOT CMAKE_BUILD_TYPE)
@@ -33,6 +37,9 @@ if(NOT CMAKE_BUILD_TYPE)
 endif(NOT CMAKE_BUILD_TYPE)
 set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "")
 
+#make sure our local CMake Modules path comes first
+list(INSERT CMAKE_MODULE_PATH 0 ${CMAKE_SOURCE_DIR}/cmake/Modules)
+
 set(ENABLE_NONFREE FALSE CACHE BOOL "Enable or disable nonfree components.")
 
 # Set the version information here
@@ -40,7 +47,7 @@ set(VERSION_INFO_MAJOR_VERSION 0)
 set(VERSION_INFO_API_COMPAT    1)
 set(VERSION_INFO_MINOR_VERSION 5)
 set(VERSION_INFO_MAINT_VERSION git)
-include(GrVersion) #setup version info
+cmake_policy(SET CMP0011 NEW)
 
 ########################################################################
 # Compiler specific setup
@@ -103,6 +110,9 @@ MESSAGE(STATUS "Configuring Boost C++ Libraries...")
 SET(BOOST_REQUIRED_COMPONENTS
     thread
     system
+    program_options
+    filesystem
+    regex
 )
 
 if(UNIX AND NOT BOOST_ROOT AND EXISTS "/usr/lib64")
@@ -130,27 +140,47 @@ ADD_DEFINITIONS(-DBOOST_ALL_DYN_LINK)
 ########################################################################
 # Install directories
 ########################################################################
+find_package(Gnuradio "3.8" REQUIRED)
+include(GrVersion)
+
 include(GrPlatform) #define LIB_SUFFIX
-set(GR_RUNTIME_DIR      bin)
-set(GR_LIBRARY_DIR      lib${LIB_SUFFIX})
-set(GR_INCLUDE_DIR      include)
-set(GR_DATA_DIR         share)
+
+if(NOT CMAKE_MODULES_DIR)
+  set(CMAKE_MODULES_DIR lib${LIB_SUFFIX}/cmake)
+endif(NOT CMAKE_MODULES_DIR)
+
+set(GR_INCLUDE_DIR      include/osmosdr)
+set(GR_CMAKE_DIR        ${CMAKE_MODULES_DIR}/osmosdr)
 set(GR_PKG_DATA_DIR     ${GR_DATA_DIR}/${CMAKE_PROJECT_NAME})
-set(GR_DOC_DIR          ${GR_DATA_DIR}/doc)
-if (NOT GR_PKG_DOC_DIR)
-    set(GR_PKG_DOC_DIR      ${GR_DOC_DIR}/${CMAKE_PROJECT_NAME})
-endif()
-set(GR_CONF_DIR         etc)
+set(GR_PKG_DOC_DIR      ${GR_DOC_DIR}/${CMAKE_PROJECT_NAME})
 set(GR_PKG_CONF_DIR     ${GR_CONF_DIR}/${CMAKE_PROJECT_NAME}/conf.d)
-set(GR_LIBEXEC_DIR      libexec)
 set(GR_PKG_LIBEXEC_DIR  ${GR_LIBEXEC_DIR}/${CMAKE_PROJECT_NAME})
-set(GRC_BLOCKS_DIR      ${GR_PKG_DATA_DIR}/grc/blocks)
+
+########################################################################
+# On Apple only, set install name and use rpath correctly, if not already set
+########################################################################
+if(APPLE)
+    if(NOT CMAKE_INSTALL_NAME_DIR)
+        set(CMAKE_INSTALL_NAME_DIR
+            ${CMAKE_INSTALL_PREFIX}/${GR_LIBRARY_DIR} CACHE
+            PATH "Library Install Name Destination Directory" FORCE)
+    endif(NOT CMAKE_INSTALL_NAME_DIR)
+    if(NOT CMAKE_INSTALL_RPATH)
+        set(CMAKE_INSTALL_RPATH
+            ${CMAKE_INSTALL_PREFIX}/${GR_LIBRARY_DIR} CACHE
+            PATH "Library Install RPath" FORCE)
+    endif(NOT CMAKE_INSTALL_RPATH)
+    if(NOT CMAKE_BUILD_WITH_INSTALL_RPATH)
+        set(CMAKE_BUILD_WITH_INSTALL_RPATH ON CACHE
+            BOOL "Do Build Using Library Install RPath" FORCE)
+    endif(NOT CMAKE_BUILD_WITH_INSTALL_RPATH)
+endif(APPLE)
 
 ########################################################################
 # Find build dependencies
 ########################################################################
 set(GR_REQUIRED_COMPONENTS RUNTIME PMT BLOCKS)
-set(MIN_GR_VERSION "3.7.10")
+set(MIN_GR_VERSION "3.8")
 find_package(Gnuradio REQUIRED)
 if("${Gnuradio_VERSION}" VERSION_LESS MIN_GR_VERSION)
     MESSAGE(FATAL_ERROR "GnuRadio version required: >=\"" ${MIN_GR_VERSION} "\" found: \"" ${Gnuradio_VERSION} "\"")
@@ -175,9 +205,14 @@ find_package(SoapySDR NO_MODULE)
 find_package(LibFreeSRP)
 find_package(Doxygen)
 
-if(NOT GNURADIO_RUNTIME_FOUND)
-    message(FATAL_ERROR "GnuRadio Runtime required to build " ${CMAKE_PROJECT_NAME})
-endif()
+########################################################################
+# Setup doxygen option
+########################################################################
+if(DOXYGEN_FOUND)
+    option(ENABLE_DOXYGEN "Build docs using Doxygen" ON)
+else(DOXYGEN_FOUND)
+    option(ENABLE_DOXYGEN "Build docs using Doxygen" OFF)
+endif(DOXYGEN_FOUND)
 
 ########################################################################
 # Setup the include and linker paths
@@ -185,13 +220,6 @@ endif()
 include_directories(
     ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/lib
-    ${Boost_INCLUDE_DIRS}
-    ${GNURADIO_ALL_INCLUDE_DIRS}
-)
-
-link_directories(
-    ${Boost_LIBRARY_DIRS}
-    ${GNURADIO_ALL_LIBRARY_DIRS}
 )
 
 # Set component parameters
@@ -213,7 +241,7 @@ add_custom_target(uninstall
 ########################################################################
 # Enable python component
 ########################################################################
-find_package(PythonLibs 2)
+find_package(PythonLibs)
 find_package(SWIG)
 
 if(SWIG_FOUND)

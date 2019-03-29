@@ -21,14 +21,14 @@
 # This file included, use CMake directory variables
 ########################################################################
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+list(APPEND gr_osmosdr_incs ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(ENABLE_FCD)
-include_directories(${GNURADIO_FCD_INCLUDE_DIRS})
+list(APPEND gr_osmosdr_incs ${GNURADIO_FCD_INCLUDE_DIRS})
 endif(ENABLE_FCD)
 
 if(ENABLE_FCDPP)
-include_directories(${GNURADIO_FCDPP_INCLUDE_DIRS})
+list(APPEND gr_osmosdr_incs ${GNURADIO_FCDPP_INCLUDE_DIRS})
 endif(ENABLE_FCDPP)
 
 set(fcd_srcs
@@ -47,3 +47,7 @@ endif(ENABLE_FCD)
 if(ENABLE_FCDPP)
 list(APPEND gr_osmosdr_libs ${GNURADIO_FCDPP_LIBRARIES})
 endif(ENABLE_FCDPP)
+
+set(gr_osmosdr_srcs ${gr_osmosdr_srcs} PARENT_SCOPE)
+set(gr_osmosdr_libs ${gr_osmosdr_libs} PARENT_SCOPE)
+set(gr_osmosdr_incs ${gr_osmosdr_incs} PARENT_SCOPE)

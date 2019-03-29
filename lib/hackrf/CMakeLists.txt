@@ -21,7 +21,7 @@
 # This file included, use CMake directory variables
 ########################################################################
 
-include_directories(
+list(APPEND gr_osmosdr_incs
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${LIBHACKRF_INCLUDE_DIRS}
 )
@@ -45,3 +45,6 @@ endif(LIBHACKRF_HAVE_DEVICE_LIST)
 ########################################################################
 list(APPEND gr_osmosdr_srcs ${hackrf_srcs})
 list(APPEND gr_osmosdr_libs ${LIBHACKRF_LIBRARIES})
+set(gr_osmosdr_srcs ${gr_osmosdr_srcs} PARENT_SCOPE)
+set(gr_osmosdr_libs ${gr_osmosdr_libs} PARENT_SCOPE)
+set(gr_osmosdr_incs ${gr_osmosdr_incs} PARENT_SCOPE)

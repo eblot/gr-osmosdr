@@ -21,7 +21,7 @@
 # This file included, use CMake directory variables
 ########################################################################
 
-include_directories(
+list(APPEND gr_osmosdr_incs
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${LIBBLADERF_INCLUDE_DIRS}
     ${VOLK_INCLUDE_DIRS}
@@ -38,3 +38,6 @@ set(bladerf_srcs
 ########################################################################
 list(APPEND gr_osmosdr_srcs ${bladerf_srcs})
 list(APPEND gr_osmosdr_libs ${LIBBLADERF_LIBRARIES} ${VOLK_LIBRARIES})
+set(gr_osmosdr_srcs ${gr_osmosdr_srcs} PARENT_SCOPE)
+set(gr_osmosdr_libs ${gr_osmosdr_libs} PARENT_SCOPE)
+set(gr_osmosdr_incs ${gr_osmosdr_incs} PARENT_SCOPE)
