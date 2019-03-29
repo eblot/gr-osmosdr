@@ -291,3 +291,12 @@ TARGET_LINK_LIBRARIES(gnuradio-osmosdr
                       ${gr_osmosdr_libs})
 SET_TARGET_PROPERTIES(gnuradio-osmosdr PROPERTIES DEFINE_SYMBOL "gnuradio_osmosdr_EXPORTS")
 # GR_LIBRARY_FOO(gnuradio-osmosdr)
+
+########################################################################
+# Install built library files
+########################################################################
+INSTALL(TARGETS gnuradio-osmosdr
+  LIBRARY DESTINATION lib${LIB_SUFFIX} # .so/.dylib file
+  ARCHIVE DESTINATION lib${LIB_SUFFIX} # .lib file
+  RUNTIME DESTINATION bin              # .dll file
+)
