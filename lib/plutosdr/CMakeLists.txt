@@ -21,14 +21,13 @@
 # This file included, use CMake directory variables
 ########################################################################
 
-include_directories(
+list(APPEND gr_osmosdr_incs
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${GNURADIO_IIO_INCLUDE_DIRS}
     ${IIO_INCLUDE_DIRS}
 )
 
 set(iio_srcs
-#    ${CMAKE_CURRENT_SOURCE_DIR}/iio_sink_c.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/plutosdr_source_c.cc
 )
 
@@ -37,3 +36,6 @@ set(iio_srcs
 ########################################################################
 list(APPEND gr_osmosdr_srcs ${iio_srcs})
 list(APPEND gr_osmosdr_libs ${GNURADIO_IIO_LIBRARIES} ${IIO_LIBRARIES})
+set(gr_osmosdr_srcs ${gr_osmosdr_srcs} PARENT_SCOPE)
+set(gr_osmosdr_libs ${gr_osmosdr_libs} PARENT_SCOPE)
+set(gr_osmosdr_incs ${gr_osmosdr_incs} PARENT_SCOPE)
